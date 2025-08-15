@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Roll No. & Paste — Live Preview</title>
+    <style>
+      :root {
+        --bg: #0f1220;
+        --panel: #151a2d;
+        --panel-2: #10152a;
+        --text: #e8eaf6;
+        --muted: #a7b0d0;
+        --primary: #7c5cff;
+        --primary-2: #5b8cff;
+        --border: #242a44;
+        --ok: #38d39f;
+        --warn: #ffb020;
+        --danger: #ff5c7a;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        background: radial-gradient(1200px 800px at 20% -10%, #2b2f54 0%, transparent 60%),
+                    radial-gradient(1200px 800px at 120% 10%, #1b2447 0%, transparent 60%),
+                    var(--bg);
+      }
+
+      .app {
+        height: 100%;
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 0;
+      }
+
+      .column {
+        padding: 24px 28px;
+        overflow: auto;
+      }
+
+      .left { border-right: 1px solid var(--border); }
+      
+
+      h1 {
+        margin: 0 0 18px 0;
+        font-size: 20px;
+        letter-spacing: 0.2px;
+        font-weight: 700;
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .input {
+        width: 100%;
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        padding: 10px 14px;
+        font-size: 15px;
+        outline: none;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
+      }
+
+      .input:focus {
+        border-color: color-mix(in srgb, var(--primary) 60%, white 10%);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 25%, transparent 75%);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .textarea {
+        width: 100%;
+        min-height: 52vh;
+        resize: vertical;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        color: var(--text);
+        padding: 14px 16px;
+        line-height: 1.5;
+        font-size: 15px;
+        outline: none;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .btn {
+        border: 1px solid var(--border);
+        background: #0f1427;
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: transform 80ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      .btn:hover { background: #121939; }
+      .btn:active { transform: translateY(1px); }
+
+      .btn.primary {
+        background: linear-gradient(180deg, var(--primary), var(--primary-2));
+        border-color: transparent;
+      }
+
+      /* Right Column */
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+        gap: 18px;
+        align-items: start;
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: var(--shadow);
+        min-height: 120px;
+      }
+
+      .card h3 {
+        margin: 0 0 6px 0;
+        font-size: 14px;
+        color: var(--muted);
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      .card pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        word-break: break-word;
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        margin-left: 6px;
+        border-radius: 999px;
+        background: rgba(124,92,255,0.18);
+        border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent);
+        color: var(--text);
+        font-size: 12px;
+      }
+
+      .hint {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 980px) {
+        .app { grid-template-columns: 1fr; }
+        .left { border-right: none; border-bottom: 1px solid var(--border); }
+        .cards { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app" role="main">
+      <section class="column left">
+        <h1>Share all - Share any text with your classmates</h1>
+        <div class="row" style="margin-bottom: 16px;">
+          <label for="rollNoInput">Enter your roll number</label>
+          <input id="rollNoInput" class="input" type="text" placeholder="e.g. 123" inputmode="numeric" autocomplete="off" />
+        </div>
+
+        <div class="row">
+          <label for="pasteArea">Paste anything</label>
+          <textarea id="pasteArea" class="textarea" placeholder="Start typing or paste any text..."></textarea>
+          <div class="actions">
+            <button id="clearBtn" class="btn">Clear</button>
+            <button id="uploadBtn" class="btn primary">Upload</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="column right">
+        <label>Shared texts (from all users)</label>
+        <div id="otherCards" class="cards"></div>
+        <div id="otherEmpty" class="hint">No shared texts yet. Press Upload to share yours. Open another tab of this page to see updates sync live.</div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+      import { getFirestore, collection, addDoc, serverTimestamp, Timestamp, query, orderBy, onSnapshot, limit } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+      (function () {
+        const EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+        const rollNoInput = document.getElementById('rollNoInput');
+        const pasteArea = document.getElementById('pasteArea');
+        const clearBtn = document.getElementById('clearBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const otherCards = document.getElementById('otherCards');
+        const otherEmpty = document.getElementById('otherEmpty');
+
+        // Restore saved state (local only for convenience)
+        const savedRoll = localStorage.getItem('ui.rollNo');
+        const savedText = localStorage.getItem('ui.text');
+        if (savedRoll) rollNoInput.value = savedRoll;
+        if (savedText) pasteArea.value = savedText;
+
+        function sanitizeRollNo(value) {
+          // Allow letters, numbers, hyphens and spaces; trim and collapse spaces
+          const cleaned = (value || '')
+            .replace(/[^\p{L}\p{N}\-\s]/gu, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          return cleaned;
+        }
+
+        function updateRollNo() {
+          const cleaned = sanitizeRollNo(rollNoInput.value);
+          rollNoInput.value = cleaned;
+          localStorage.setItem('ui.rollNo', cleaned);
+        }
+
+        function updateText() {
+          localStorage.setItem('ui.text', pasteArea.value);
+        }
+
+        function escapeHtml(str) {
+          return (str || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;');
+        }
+
+        function renderOtherUsers(list) {
+          otherCards.innerHTML = '';
+          if (!list || list.length === 0) {
+            otherEmpty.style.display = 'block';
+            return;
+          }
+          otherEmpty.style.display = 'none';
+          list
+            .slice()
+            .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+            .forEach(item => {
+            const article = document.createElement('article');
+            article.className = 'card';
+            const h3 = document.createElement('h3');
+            h3.innerHTML = 'Roll no.<span class="tag">' + escapeHtml(item.rollNo || 'N/A') + '</span>';
+            const pre = document.createElement('pre');
+            pre.innerHTML = escapeHtml(item.text || '');
+            const exp = document.createElement('div');
+            const expireAt = item.expireAt || ((item.ts || 0) + EXPIRY_MS);
+            exp.className = 'hint';
+            exp.setAttribute('data-exp', String(expireAt));
+            exp.textContent = 'expires in ' + formatRemaining(expireAt - Date.now());
+            article.appendChild(h3);
+            article.appendChild(pre);
+            article.appendChild(exp);
+            otherCards.appendChild(article);
+          });
+        }
+        
+        // Firebase
+        const firebaseConfig = {
+          apiKey: 'AIzaSyDnzIcS2fTCx7RL4-Mmtair1bnaJY5SgH4',
+          authDomain: 'shareall-2fc5c.firebaseapp.com',
+          projectId: 'shareall-2fc5c',
+          storageBucket: 'shareall-2fc5c.firebasestorage.app',
+          messagingSenderId: '287634912162',
+          appId: '1:287634912162:web:42dfa30ec599c12e7638fb'
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const postsRef = collection(db, 'posts');
+        const postsQuery = query(postsRef, orderBy('ts', 'desc'), limit(200));
+
+        let latestItems = [];
+        onSnapshot(postsQuery, (snapshot) => {
+          const now = Date.now();
+          latestItems = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const tsMs = data.ts?.toMillis ? data.ts.toMillis() : (typeof data.ts === 'number' ? data.ts : 0);
+            const expMs = data.expireAt?.toMillis ? data.expireAt.toMillis() : (tsMs ? tsMs + EXPIRY_MS : 0);
+            return { rollNo: data.rollNo || 'N/A', text: data.text || '', ts: tsMs, expireAt: expMs };
+          });
+          const visible = latestItems.filter(x => (x.expireAt || 0) > now);
+          renderOtherUsers(visible);
+        }, (err) => {
+          console.error('Firestore listener error', err);
+          otherEmpty.style.display = 'block';
+          otherEmpty.textContent = 'Unable to load shared texts. Please add your Firebase config in the script.';
+        });
+
+        function formatRemaining(ms) {
+          const remain = Math.max(0, Math.floor(ms / 1000));
+          const m = Math.floor(remain / 60).toString().padStart(1, '0');
+          const s = (remain % 60).toString().padStart(2, '0');
+          return m + ':' + s;
+        }
+
+        function tickCountdown() {
+          const nodes = otherCards.querySelectorAll('[data-exp]');
+          let needsPrune = false;
+          nodes.forEach(node => {
+            const exp = Number(node.getAttribute('data-exp')) || 0;
+            const diff = exp - Date.now();
+            if (diff <= 0) {
+              needsPrune = true;
+            } else {
+              node.textContent = 'expires in ' + formatRemaining(diff);
+            }
+          });
+          if (needsPrune) {
+            const filtered = pruneExpiredPosts();
+            renderOtherUsers(filtered);
+          }
+        }
+
+        // Events
+        rollNoInput.addEventListener('input', updateRollNo);
+        pasteArea.addEventListener('input', updateText);
+
+        clearBtn.addEventListener('click', () => {
+          if (!pasteArea.value) return;
+          const ok = confirm('Clear the text?');
+          if (ok) {
+            pasteArea.value = '';
+            updateText();
+          }
+        });
+
+        uploadBtn.addEventListener('click', async () => {
+          const roll = sanitizeRollNo(rollNoInput.value);
+          const text = (pasteArea.value || '').trim();
+          if (!roll) return alert('Please enter your roll number first.');
+          if (!text) return alert('Please paste some text to upload.');
+          try {
+            await addDoc(postsRef, {
+              rollNo: roll,
+              text,
+              ts: serverTimestamp(),
+              expireAt: Timestamp.fromDate(new Date(Date.now() + EXPIRY_MS))
+            });
+          } catch (e) {
+            alert('Upload failed. Check your internet connection and Firebase config.');
+          }
+        });
+
+        // Countdown tick; also hides expired posts locally between server deletions
+        function tickCountdown() {
+          const nodes = otherCards.querySelectorAll('[data-exp]');
+          let anyExpiredNow = false;
+          nodes.forEach(node => {
+            const exp = Number(node.getAttribute('data-exp')) || 0;
+            const diff = exp - Date.now();
+            if (diff <= 0) {
+              anyExpiredNow = true;
+            } else {
+              node.textContent = 'expires in ' + formatRemaining(diff);
+            }
+          });
+          if (anyExpiredNow) {
+            const visible = (latestItems || []).filter(x => (x.expireAt || 0) > Date.now());
+            renderOtherUsers(visible);
+          }
+        }
+
+        // Initial render
+        updateRollNo();
+        updateText();
+        setInterval(tickCountdown, 1000);
+      })();
+    </script>
+  </body>
+  </html>
+
+
