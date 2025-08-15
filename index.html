@@ -319,6 +319,7 @@
     <script type="module">
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
       import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+      import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics.js';
       import { getFirestore, collection, addDoc, serverTimestamp, Timestamp, query, orderBy, onSnapshot, limit } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
       (function () {
@@ -406,6 +407,7 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const analytics = getAnalytics(app);
         try {
           const auth = getAuth(app);
           signInAnonymously(auth).catch((err) => console.warn('Anonymous sign-in failed', err));
