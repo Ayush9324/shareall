@@ -48,7 +48,6 @@
       }
 
       .left { border-right: 1px solid var(--border); }
-      
 
       h1 {
         margin: 0 0 18px 0;
@@ -106,6 +105,7 @@
         display: flex;
         gap: 10px;
         margin-top: 10px;
+        flex-wrap: wrap;
       }
 
       .btn {
@@ -123,8 +123,28 @@
       .btn:active { transform: translateY(1px); }
 
       .btn.primary {
-        background: linear-gradient(180deg, var(--primary), var(--primary-2));
-        border-color: transparent;
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--primary) 92%, white 8%),
+          color-mix(in srgb, var(--primary-2) 92%, black 8%)
+        );
+        border-color: color-mix(in srgb, var(--primary) 65%, transparent);
+        box-shadow: 0 10px 22px rgba(124, 92, 255, 0.28);
+      }
+      .btn.primary:hover {
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--primary) 96%, white 4%),
+          color-mix(in srgb, var(--primary-2) 96%, black 4%)
+        );
+        border-color: color-mix(in srgb, var(--primary) 75%, transparent);
+      }
+      .btn.primary:active { transform: translateY(1px); box-shadow: 0 6px 16px rgba(124, 92, 255, 0.24); }
+
+      .btn.small {
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 8px;
       }
 
       /* Right Column */
@@ -161,6 +181,13 @@
         line-height: 1.5;
       }
 
+      .toolbar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
       .tag {
         display: inline-block;
         padding: 2px 8px;
@@ -178,10 +205,77 @@
         font-size: 13px;
       }
 
+      /* Rolling credit banner */
+      .roll-banner {
+        position: fixed;
+        left: 16px;
+        bottom: 16px;
+        height: 44px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        width: auto;
+        transition: box-shadow 160ms ease;
+        z-index: 50;
+        cursor: default;
+      }
+
+      .roll-tab {
+        width: auto;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-right: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1;
+        padding: 0 12px;
+      }
+
+      .roll-text {
+        width: 0;
+        padding: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1;
+        opacity: 0;
+        transform: translateX(-6px);
+        transition: width 260ms cubic-bezier(.2,.8,.2,1), padding 200ms ease, opacity 200ms ease 80ms, transform 220ms ease 80ms;
+      }
+
+      .roll-banner.open .roll-text {
+        width: 280px;
+        padding: 0 14px 0 10px;
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* Mobile view switcher */
+      .mobile-switch {
+        display: none;
+      }
+      .mobile-only {
+        display: none;
+      }
+
       @media (max-width: 980px) {
         .app { grid-template-columns: 1fr; }
         .left { border-right: none; border-bottom: 1px solid var(--border); }
         .cards { grid-template-columns: 1fr; }
+
+        .right { display: none; }
+        body.m-show-right .right { display: block; }
+        body.m-show-right .left { display: none; }
+
+        .mobile-only { display: inline-block; }
+
+        .roll-banner { cursor: pointer; }
       }
     </style>
   </head>
@@ -200,23 +294,35 @@
           <div class="actions">
             <button id="clearBtn" class="btn">Clear</button>
             <button id="uploadBtn" class="btn primary">Upload</button>
+            <button id="openSharedBtnInline" class="btn primary mobile-only">Shared texts →</button>
           </div>
         </div>
       </section>
 
       <section class="column right">
+        <div class="actions mobile-only" style="margin-bottom:10px;">
+          <button id="closeSharedBtnInline" class="btn"><- Back</button>
+        </div>
         <label>Shared texts (from all users)</label>
         <div id="otherCards" class="cards"></div>
-        <div id="otherEmpty" class="hint">No shared texts yet. Press Upload to share yours. Open another tab of this page to see updates sync live.</div>
+        <div id="otherEmpty" class="hint">
+          No shared texts yet. Press Upload to share yours. Open another tab of this page to see updates sync live.
+        </div>
       </section>
     </main>
 
+    <div class="roll-banner" aria-label="Credits" title="Credits" id="aboutBanner">
+      <div class="roll-tab">About Dev</div>
+      <div class="roll-text">Made by Ayush Vishwakarma with ☕ + ❤️</div>
+    </div>
+
     <script type="module">
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+      import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
       import { getFirestore, collection, addDoc, serverTimestamp, Timestamp, query, orderBy, onSnapshot, limit } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
       (function () {
-        const EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+        const EXPIRY_MS = 5 * 60 * 1000;
         const rollNoInput = document.getElementById('rollNoInput');
         const pasteArea = document.getElementById('pasteArea');
         const clearBtn = document.getElementById('clearBtn');
@@ -224,19 +330,16 @@
         const otherCards = document.getElementById('otherCards');
         const otherEmpty = document.getElementById('otherEmpty');
 
-        // Restore saved state (local only for convenience)
         const savedRoll = localStorage.getItem('ui.rollNo');
         const savedText = localStorage.getItem('ui.text');
         if (savedRoll) rollNoInput.value = savedRoll;
         if (savedText) pasteArea.value = savedText;
 
         function sanitizeRollNo(value) {
-          // Allow letters, numbers, hyphens and spaces; trim and collapse spaces
-          const cleaned = (value || '')
+          return (value || '')
             .replace(/[^\p{L}\p{N}\-\s]/gu, '')
             .replace(/\s+/g, ' ')
             .trim();
-          return cleaned;
         }
 
         function updateRollNo() {
@@ -267,25 +370,32 @@
             .slice()
             .sort((a, b) => (b.ts || 0) - (a.ts || 0))
             .forEach(item => {
-            const article = document.createElement('article');
-            article.className = 'card';
-            const h3 = document.createElement('h3');
-            h3.innerHTML = 'Roll no.<span class="tag">' + escapeHtml(item.rollNo || 'N/A') + '</span>';
-            const pre = document.createElement('pre');
-            pre.innerHTML = escapeHtml(item.text || '');
-            const exp = document.createElement('div');
-            const expireAt = item.expireAt || ((item.ts || 0) + EXPIRY_MS);
-            exp.className = 'hint';
-            exp.setAttribute('data-exp', String(expireAt));
-            exp.textContent = 'expires in ' + formatRemaining(expireAt - Date.now());
-            article.appendChild(h3);
-            article.appendChild(pre);
-            article.appendChild(exp);
-            otherCards.appendChild(article);
-          });
+              const article = document.createElement('article');
+              article.className = 'card';
+              const h3 = document.createElement('h3');
+              h3.innerHTML = 'Roll no.<span class="tag">' + escapeHtml(item.rollNo || 'N/A') + '</span>';
+              const pre = document.createElement('pre');
+              pre.innerHTML = escapeHtml(item.text || '');
+              const exp = document.createElement('div');
+              const expireAt = item.expireAt || ((item.ts || 0) + EXPIRY_MS);
+              exp.className = 'hint';
+              exp.setAttribute('data-exp', String(expireAt));
+              exp.textContent = 'expires in ' + formatRemaining(expireAt - Date.now());
+              const toolbar = document.createElement('div');
+              toolbar.className = 'toolbar';
+              const copyBtn = document.createElement('button');
+              copyBtn.className = 'btn small';
+              copyBtn.setAttribute('data-copy', '');
+              copyBtn.textContent = 'Copy';
+              toolbar.appendChild(copyBtn);
+              article.appendChild(h3);
+              article.appendChild(pre);
+              article.appendChild(toolbar);
+              article.appendChild(exp);
+              otherCards.appendChild(article);
+            });
         }
-        
-        // Firebase
+
         const firebaseConfig = {
           apiKey: 'AIzaSyDnzIcS2fTCx7RL4-Mmtair1bnaJY5SgH4',
           authDomain: 'shareall-2fc5c.firebaseapp.com',
@@ -296,6 +406,10 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        try {
+          const auth = getAuth(app);
+          signInAnonymously(auth).catch((err) => console.warn('Anonymous sign-in failed', err));
+        } catch (_) { /* ignore */ }
         const postsRef = collection(db, 'posts');
         const postsQuery = query(postsRef, orderBy('ts', 'desc'), limit(200));
 
@@ -325,23 +439,22 @@
 
         function tickCountdown() {
           const nodes = otherCards.querySelectorAll('[data-exp]');
-          let needsPrune = false;
+          let anyExpiredNow = false;
           nodes.forEach(node => {
             const exp = Number(node.getAttribute('data-exp')) || 0;
             const diff = exp - Date.now();
             if (diff <= 0) {
-              needsPrune = true;
+              anyExpiredNow = true;
             } else {
               node.textContent = 'expires in ' + formatRemaining(diff);
             }
           });
-          if (needsPrune) {
-            const filtered = pruneExpiredPosts();
-            renderOtherUsers(filtered);
+          if (anyExpiredNow) {
+            const visible = (latestItems || []).filter(x => (x.expireAt || 0) > Date.now());
+            renderOtherUsers(visible);
           }
         }
 
-        // Events
         rollNoInput.addEventListener('input', updateRollNo);
         pasteArea.addEventListener('input', updateText);
 
@@ -371,32 +484,46 @@
           }
         });
 
-        // Countdown tick; also hides expired posts locally between server deletions
-        function tickCountdown() {
-          const nodes = otherCards.querySelectorAll('[data-exp]');
-          let anyExpiredNow = false;
-          nodes.forEach(node => {
-            const exp = Number(node.getAttribute('data-exp')) || 0;
-            const diff = exp - Date.now();
-            if (diff <= 0) {
-              anyExpiredNow = true;
-            } else {
-              node.textContent = 'expires in ' + formatRemaining(diff);
-            }
-          });
-          if (anyExpiredNow) {
-            const visible = (latestItems || []).filter(x => (x.expireAt || 0) > Date.now());
-            renderOtherUsers(visible);
+        otherCards.addEventListener('click', async (ev) => {
+          const btn = ev.target.closest('button[data-copy]');
+          if (!btn) return;
+          const card = btn.closest('.card');
+          const text = (card?.querySelector('pre')?.textContent) || '';
+          try {
+            await navigator.clipboard.writeText(text);
+            const previous = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = previous || 'Copy'; }, 900);
+          } catch (err) {
+            alert('Copy failed. Select the text and press Ctrl+C.');
           }
-        }
+        });
 
-        // Initial render
         updateRollNo();
         updateText();
         setInterval(tickCountdown, 1000);
+
+        const openSharedBtnInline = document.getElementById('openSharedBtnInline');
+        const closeSharedBtnInline = document.getElementById('closeSharedBtnInline');
+
+        function openSharedView() {
+          document.body.classList.add('m-show-right');
+        }
+
+        openSharedBtnInline?.addEventListener('click', openSharedView);
+
+        closeSharedBtnInline?.addEventListener('click', () => {
+          document.body.classList.remove('m-show-right');
+        });
+
+        const aboutBanner = document.getElementById('aboutBanner');
+        const prefersHover = window.matchMedia('(hover: hover)').matches;
+        if (!prefersHover && aboutBanner) {
+          aboutBanner.addEventListener('click', () => {
+            aboutBanner.classList.toggle('open');
+          });
+        }
       })();
     </script>
   </body>
-  </html>
-
-
+</html>
