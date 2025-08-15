@@ -519,10 +519,23 @@
         const aboutBanner = document.getElementById('aboutBanner');
         const prefersHover = window.matchMedia('(hover: hover)').matches;
 
-        // Mobile: click to toggle
+        // Mobile: click to toggle (fixed)
         if (!prefersHover && aboutBanner) {
+          const mobileQuery = window.matchMedia('(max-width: 980px)');
+          let isOpen = false;
+
           aboutBanner.addEventListener('click', () => {
-            aboutBanner.classList.toggle('open');
+            if (mobileQuery.matches) {
+              isOpen = !isOpen;
+              aboutBanner.classList.toggle('open', isOpen);
+            }
+          });
+
+          mobileQuery.addEventListener('change', e => {
+            if (!e.matches) {
+              isOpen = false;
+              aboutBanner.classList.remove('open');
+            }
           });
         }
         // Desktop: hover to open/close
