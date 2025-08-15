@@ -518,9 +518,20 @@
 
         const aboutBanner = document.getElementById('aboutBanner');
         const prefersHover = window.matchMedia('(hover: hover)').matches;
+
+        // Mobile: click to toggle
         if (!prefersHover && aboutBanner) {
           aboutBanner.addEventListener('click', () => {
             aboutBanner.classList.toggle('open');
+          });
+        }
+        // Desktop: hover to open/close
+        else if (prefersHover && aboutBanner) {
+          aboutBanner.addEventListener('mouseenter', () => {
+            aboutBanner.classList.add('open');
+          });
+          aboutBanner.addEventListener('mouseleave', () => {
+            aboutBanner.classList.remove('open');
           });
         }
       })();
