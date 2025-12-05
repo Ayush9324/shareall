@@ -323,7 +323,7 @@
       import { getFirestore, collection, addDoc, serverTimestamp, Timestamp, query, orderBy, onSnapshot, limit } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
       (function () {
-        const EXPIRY_MS = 1 * 60 * 1000;
+        const EXPIRY_MS = 5 * 60 * 1000;
         const rollNoInput = document.getElementById('rollNoInput');
         const pasteArea = document.getElementById('pasteArea');
         const clearBtn = document.getElementById('clearBtn');
